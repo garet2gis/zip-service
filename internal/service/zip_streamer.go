@@ -2,7 +2,6 @@ package service
 
 import (
 	"archive/zip"
-	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +16,8 @@ import (
 )
 
 const (
-	ROOT_DIRECTORY = "root/"
+	ROOT_DIRECTORY    = "root/"
+	UPLOADS_DIRECTORY = "root/uploads"
 )
 
 type ZipStreamer struct {
@@ -92,50 +92,43 @@ func (s *ZipStreamer) GetFiles(files []dto.FileEntry, destination io.Writer) err
 	return zipWriter.Close()
 }
 
-func (s *ZipStreamer) UploadFile(fileName string, part *multipart.Part) (bytesWritten int64, partsWritten int64, err error) {
-	log.Printf("read part %s", fileName)
+func (s *ZipStreamer) UploadFile(fileName string, fileHeader *multipart.FileHeader) (err error) {
+	log.Printf("read file %s", fileName)
 
-	drainTo, drainErr := os.Create(fileName)
-
-	if drainErr != nil {
-		log.Printf("cannot write out file %s, %v", fileName, drainErr)
-		return 0, 0, drainErr
+	if !strings.HasSuffix(fileName, ".zip") {
+		return apperror.NewAppError(nil, "file must be in zip format", "")
 	}
 
-	drain := bufio.NewWriter(drainTo)
-
-	var lastBytesRead int
-	buffer := make([]byte, s.bufferSize)
-	for lastBytesRead >= 0 {
-		bytesRead, err := part.Read(buffer)
-		lastBytesRead = bytesRead
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Printf("error reading data! %v", err)
-			return 0, 0, err
-		}
-		if lastBytesRead > 0 {
-			bytesWritten += int64(lastBytesRead)
-			_, err = drain.Write(buffer[:bytesRead])
-			if err != nil {
-				return 0, 0, err
-			}
-			partsWritten++
-		}
-	}
-	err = drain.Flush()
+	aux, _ := fileHeader.Open()
 	if err != nil {
-		return 0, 0, err
+		return err
 	}
-	log.Printf("wrote file %s of length %d", fileName, bytesWritten)
 
-	return bytesWritten, partsWritten, nil
+	fileName = path.Join(ROOT_DIRECTORY, fileName)
+
+	drainTo, _ := os.Create(fileName)
+	_, err = io.Copy(drainTo, aux)
+	if err != nil {
+		return err
+	}
+
+	// check zip file is correct
+	f, err := zip.OpenReader(fileName)
+	if err != nil {
+		return err
+	}
+	defer func() { err = f.Close() }()
+
+	// unzip file in goroutine
+	go func() {
+		_ = s.UnzipFile(fileName)
+	}()
+
+	return nil
 }
 
 func (s *ZipStreamer) UnzipFile(pathName string) (err error) {
-	dst := "root/uploads"
+	dst := UPLOADS_DIRECTORY
 	archive, err := zip.OpenReader(pathName)
 	if err != nil {
 		return err

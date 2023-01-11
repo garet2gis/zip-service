@@ -10,3 +10,10 @@ run:
   	--memory=512m \
    	--name ziptest \
   	zip
+
+.PHONY: swagger
+swagger:
+	swag fmt && \
+	cd ./cmd/main && \
+	swag init --pd --parseInternal --ot go && \
+	cd ../../

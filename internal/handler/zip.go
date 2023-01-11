@@ -7,7 +7,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"zip_service/internal/apperror"
 	"zip_service/internal/dto"
 )
@@ -19,8 +18,7 @@ const (
 
 type ZipService interface {
 	GetFiles(files []dto.FileEntry, destination io.Writer) error
-	UploadFile(fileName string, part *multipart.Part) (bytesWritten int64, partsWritten int64, err error)
-	UnzipFile(fileName string) (err error)
+	UploadFile(fileName string, file *multipart.FileHeader) (err error)
 }
 
 type zipHandler struct {
@@ -35,48 +33,36 @@ func NewZipHandler(s ZipService) Handler {
 
 func (h *zipHandler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, Download, apperror.Middleware(h.Download))
-	router.HandlerFunc(http.MethodPost, Upload, apperror.Middleware(h.UploadZIP))
+	router.HandlerFunc(http.MethodPost, Upload, apperror.Middleware(h.Upload))
 }
 
-func (h *zipHandler) UploadZIP(w http.ResponseWriter, req *http.Request) error {
-	multipartReader, err := req.MultipartReader()
+func (h *zipHandler) Upload(w http.ResponseWriter, req *http.Request) error {
+	err := req.ParseMultipartForm(32 << 20)
 	if err != nil {
-		log.Printf("failed to get a multipart reader %v", err)
+		log.Printf("failed to parse a multipart %v", err)
 		return err
 	}
-
-	partBytes := int64(0)
-	partCount := int64(0)
-	for {
-		part, partErr := multipartReader.NextPart()
-		if partErr != nil {
-			if partErr == io.EOF {
-				break
-			} else {
-				return partErr
-			}
-		} else {
-			if len(part.FileName()) > 0 && strings.HasSuffix(part.FileName(), ".zip") {
-				fileName := "root" + "/" + part.FileName()
-				partBytesIncr, partCountIncr, err := h.service.UploadFile(fileName, part)
-				if err != nil {
-					return err
-				}
-				err = h.service.UnzipFile(fileName)
-				if err != nil {
-					return err
-				}
-				partBytes += partBytesIncr
-				partCount += partCountIncr
-			}
+	file := req.MultipartForm
+	for _, header := range file.File {
+		err = h.service.UploadFile(header[0].Filename, header[0])
+		if err != nil {
+			return err
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 
 	return nil
 }
 
+// Download godoc
+// @Summary Скачивание желаемых файлов в форме zip-архива
+// @ID      download-zip
+// @Param   user_id body dto.ZipDescriptor true "Zip Descriptor"
+// @Tags    ZIP
+// @Success 200 {string} string "ZIP file"
+// @Failure 404 {object} apperror.AppError
+// @Router  /download/ [post]
 func (h *zipHandler) Download(w http.ResponseWriter, req *http.Request) error {
 	var zipDescriptor dto.ZipDescriptor
 

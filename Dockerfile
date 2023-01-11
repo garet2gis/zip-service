@@ -14,10 +14,9 @@ WORKDIR /zip_service
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./.bin/main ./cmd/main/
 
 # Step 3: Final
-FROM scratch
+FROM alpine
 
 COPY --from=builder /zip_service/.bin/main .
-#COPY --from=builder /zip_service/root ./root
-#ADD ./root ./root
+COPY --from=builder /zip_service/cmd/main/docs ./docs
 
 ENTRYPOINT ["./main"]

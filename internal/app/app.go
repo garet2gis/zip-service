@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net"
 	"net/http"
 	"time"
+	"zip_service/cmd/main/docs"
 	"zip_service/internal/handler"
 	"zip_service/internal/service"
 )
@@ -21,6 +23,9 @@ type App struct {
 
 func NewApp() *App {
 	router := httprouter.New()
+
+	log.Println("swagger docs initializing")
+	initSwagger(router, "0.0.0.0", "8080")
 
 	log.Println("zip routes initializing")
 	zh := handler.NewZipHandler(service.NewZipStreamer())
@@ -85,4 +90,12 @@ func (a *App) startHTTP(ctx context.Context) error {
 	}
 
 	return err
+}
+
+func initSwagger(router *httprouter.Router, ip, port string) {
+	host := fmt.Sprintf("%s:%s", ip, port)
+	docs.SwaggerInfo.Host = host
+	router.Handler(http.MethodGet, "/swagger/*filename", httpSwagger.Handler(
+		httpSwagger.URL(fmt.Sprintf("http://%s/swagger/doc.json", host)),
+	))
 }
