@@ -6,4 +6,5 @@ logs
 .bin
 *.exe
 build*
-root/movie/*
+root/*
+!root/.gitkeep
