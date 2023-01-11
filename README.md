@@ -9,7 +9,7 @@
 ```
 make build
 ```
-2. Запускаем контейнер с ограничением RAM в 512 Мб
+2. Запускаем контейнер с ограничением RAM в 512 Мб (боллее подробно команды можно посмотреть в файле Makefile)
 ```
 make run
 ```
@@ -73,7 +73,7 @@ curl -X 'POST' \
 В положительном результате получаем код ответа 204 (No content)
 и следующую структуру файлов: 
 
-<img width="266" alt="image" src="https://user-images.githubusercontent.com/42912280/211899957-da1f1aa3-df82-4dd9-acfd-bd93e817b534.png">
+<img width="239" alt="image" src="https://user-images.githubusercontent.com/42912280/211903695-8d1d87f7-0724-402b-9831-438c7362377f.png">
 
 Реализация использует функцию ParseMultipartForm, которая нарезает поля multipart-formdata
 на куски заданного размера, в моем случае около 4 Мб и загружает только их в RAM, остальные части сохраняются на диске
