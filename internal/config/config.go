@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	RootDirectory    string `env:"ROOT_DIRECTORY" env-default:"root"`
-	UploadsDirectory string `env:"UPLOADS_DIRECTORY" env-default:"upload"`
+	UploadsDirectory string `env:"UPLOADS_DIRECTORY" env-default:"uploads"`
 
 	HTTPConfig struct {
 		Port        string `env:"PORT"  env-required:"true"`
