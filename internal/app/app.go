@@ -26,6 +26,8 @@ func NewApp() *App {
 	zh := handler.NewZipHandler(service.NewZipStreamer())
 	zh.Register(router)
 
+	router.NotFound = http.FileServer(http.Dir("root"))
+
 	return &App{
 		router: router,
 	}
