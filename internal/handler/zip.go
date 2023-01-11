@@ -36,6 +36,15 @@ func (h *zipHandler) Register(router *httprouter.Router) {
 	router.HandlerFunc(http.MethodPost, Upload, apperror.Middleware(h.Upload))
 }
 
+// Upload godoc
+// @Summary Загрузка zip архива и разархивация его
+// @ID      upload-zip
+// @Accept  mpfd
+// @Param   user_id formData []file true "File form data"
+// @Tags    ZIP
+// @Success 204
+// @Failure 404 {object} apperror.AppError
+// @Router  /upload/ [post]
 func (h *zipHandler) Upload(w http.ResponseWriter, req *http.Request) error {
 	err := req.ParseMultipartForm(32 << 20)
 	if err != nil {
@@ -58,7 +67,7 @@ func (h *zipHandler) Upload(w http.ResponseWriter, req *http.Request) error {
 // Download godoc
 // @Summary Скачивание желаемых файлов в форме zip-архива
 // @ID      download-zip
-// @Param   user_id body dto.ZipDescriptor true "Zip Descriptor"
+// @Param   zip_descriptor body dto.ZipDescriptor true "Zip Descriptor"
 // @Tags    ZIP
 // @Success 200 {string} string "ZIP file"
 // @Failure 404 {object} apperror.AppError

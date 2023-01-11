@@ -26,7 +26,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Zip Descriptor",
-                        "name": "user_id",
+                        "name": "zip_descriptor",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -58,7 +58,7 @@ const docTemplate = `{
                 "tags": [
                     "ZIP"
                 ],
-                "summary": "Загрузка ZIP файла и его разархивация",
+                "summary": "Загрузка zip архива и разархивация его",
                 "operationId": "upload-zip",
                 "parameters": [
                     {
@@ -66,8 +66,8 @@ const docTemplate = `{
                         "items": {
                             "type": "file"
                         },
-                        "description": "Zip files to upload",
-                        "name": "form_data",
+                        "description": "File form data",
+                        "name": "user_id",
                         "in": "formData",
                         "required": true
                     }
