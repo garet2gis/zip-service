@@ -6,3 +6,4 @@ logs
 .bin
 *.exe
 build*
+root/movie/*

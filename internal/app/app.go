@@ -47,7 +47,7 @@ func (a *App) startHTTP(ctx context.Context) error {
 
 	//host := fmt.Sprintf("%s:%s", a.cfg.LocalIP, a.cfg.HTTPConfig.Port)
 	// TODO: config
-	host := fmt.Sprintf("%s:%s", "127.0.0.1", "8080")
+	host := fmt.Sprintf("%s:%s", "0.0.0.0", "8080")
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		log.Fatal("failed to create listener")
