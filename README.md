@@ -19,6 +19,9 @@ make run
 Более подробно можно посмотреть, а также протестировать в Swagger-е 
 по маршруту <b>/swagger</b>
 
+<img width="621" alt="image" src="https://user-images.githubusercontent.com/42912280/211901479-308ff62e-5222-4404-b44d-2807c87df96e.png">
+
+
 Все манипуляции с файлами происходят в директории <b>root</b>, название которой
 можно изменить в .env файле
 ### POST /download
@@ -47,12 +50,16 @@ curl -X 'POST' \
 В теле указываю массив из файлов, где поле <b>path</b> - местоположение файла на хосте,
 а поле <b>zip_path</b> желаемое местонахождение файла в архиве
 
-В результате выполнения запроса получаем zip-архив с именем <b>archive.zip</b>
+В результате выполнения запроса получаем zip-архив с именем <b>archive.zip</b> следующей структуры (2 картинки в папке myzip):
+
+<img width="699" alt="image" src="https://user-images.githubusercontent.com/42912280/211898212-3a29f3ff-8330-4751-9b87-0aa8b23b6995.png">
+
+Реализация использует буффер, размер которого можно задать. Таким образом, файл не загружается целиком в память, а только его часть. Было успешно протестировано на файлах размером в несколько Гб.
 
 ### POST /upload
 
 Загружает zip-архивы на сервер в формате multipart-formdata
-и распаковывает его в папку <b>upload</b> (название можно изменить в .env)
+и распаковывает его в директорию <b>root/upload</b> (название можно изменить в .env)
 
 Пример CURL запроса
 ```
@@ -60,7 +67,35 @@ curl -X 'POST' \
   'http://0.0.0.0:8080/upload/' \
   -H 'accept: application/json' \
   -H 'Content-Type: multipart/form-data' \
-  -F 'user_id=@archive_2.zip;type=application/zip'
+  -F 'user_id=@archive.zip;type=application/zip'
 ```
 
-В положительном результате получаем код ответ 204 (No content)
+В положительном результате получаем код ответа 204 (No content)
+и следующую структуру файлов: 
+
+<img width="266" alt="image" src="https://user-images.githubusercontent.com/42912280/211899957-da1f1aa3-df82-4dd9-acfd-bd93e817b534.png">
+
+Реализация использует функцию ParseMultipartForm, которая нарезает поля multipart-formdata
+на куски заданного размера, в моем случае около 4 Мб и загружает только их в RAM, остальные части сохраняются на диске
+во временных файлах.
+
+После чего загруженные zip-архивы распаковываются в отдельных горутинах в папку <b>uploads</b>.
+
+### GET /
+Листинг файлов папки <b>root</b>:
+
+<img width="752" alt="image" src="https://user-images.githubusercontent.com/42912280/211902405-723c407d-19a9-4ba2-a652-023fc607c5c8.png">
+
+Содержимое папки <b>uploads</b>:
+
+<img width="752" alt="image" src="https://user-images.githubusercontent.com/42912280/211902507-8c2a521d-2e8a-46bb-bfd7-f1ffe18163a2.png">
+
+Содержимое папки <b>myzip</b>:
+
+<img width="752" alt="image" src="https://user-images.githubusercontent.com/42912280/211902562-e446c6df-69c7-4794-929a-6b0900edc8e1.png">
+
+
+
+
+
+
