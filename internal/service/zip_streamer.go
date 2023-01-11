@@ -12,20 +12,18 @@ import (
 	"strings"
 	"time"
 	"zip_service/internal/apperror"
+	"zip_service/internal/config"
 	"zip_service/internal/dto"
-)
-
-const (
-	ROOT_DIRECTORY    = "root/"
-	UPLOADS_DIRECTORY = "root/uploads"
 )
 
 type ZipStreamer struct {
 	bufferSize int
+	cfg        *config.Config
 }
 
-func NewZipStreamer() *ZipStreamer {
+func NewZipStreamer(cfg *config.Config) *ZipStreamer {
 	return &ZipStreamer{
+		cfg: cfg,
 		// 1 KB
 		bufferSize: 8 * 1024,
 	}
@@ -40,7 +38,7 @@ func (s *ZipStreamer) GetFiles(files []dto.FileEntry, destination io.Writer) err
 	success := 0
 
 	for _, entry := range files {
-		file, err := os.Open(path.Join(ROOT_DIRECTORY, entry.Path))
+		file, err := os.Open(filepath.Join(s.cfg.RootDirectory, entry.Path))
 		if err != nil {
 			return err
 		}
@@ -104,7 +102,7 @@ func (s *ZipStreamer) UploadFile(fileName string, fileHeader *multipart.FileHead
 		return err
 	}
 
-	fileName = path.Join(ROOT_DIRECTORY, fileName)
+	fileName = path.Join(s.cfg.RootDirectory, fileName)
 
 	drainTo, _ := os.Create(fileName)
 	_, err = io.Copy(drainTo, aux)
@@ -128,7 +126,7 @@ func (s *ZipStreamer) UploadFile(fileName string, fileHeader *multipart.FileHead
 }
 
 func (s *ZipStreamer) UnzipFile(pathName string) (err error) {
-	dst := UPLOADS_DIRECTORY
+	dst := filepath.Join(s.cfg.RootDirectory, s.cfg.UploadsDirectory)
 	archive, err := zip.OpenReader(pathName)
 	if err != nil {
 		return err

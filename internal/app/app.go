@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"time"
 	"zip_service/cmd/main/docs"
+	"zip_service/internal/config"
 	"zip_service/internal/handler"
 	"zip_service/internal/service"
 )
@@ -19,22 +20,24 @@ import (
 type App struct {
 	router     *httprouter.Router
 	httpServer *http.Server
+	cfg        *config.Config
 }
 
-func NewApp() *App {
+func NewApp(cfg *config.Config) *App {
 	router := httprouter.New()
 
 	log.Println("swagger docs initializing")
-	initSwagger(router, "0.0.0.0", "8080")
+	initSwagger(router, cfg.HTTPConfig.Host, cfg.HTTPConfig.Port)
 
 	log.Println("zip routes initializing")
-	zh := handler.NewZipHandler(service.NewZipStreamer())
+	zh := handler.NewZipHandler(service.NewZipStreamer(cfg))
 	zh.Register(router)
 
 	router.NotFound = http.FileServer(http.Dir("root"))
 
 	return &App{
 		router: router,
+		cfg:    cfg,
 	}
 }
 
@@ -54,17 +57,16 @@ func (a *App) startHTTP(ctx context.Context) error {
 
 	//host := fmt.Sprintf("%s:%s", a.cfg.LocalIP, a.cfg.HTTPConfig.Port)
 	// TODO: config
-	host := fmt.Sprintf("%s:%s", "0.0.0.0", "8080")
+	host := fmt.Sprintf("%s:%s", a.cfg.HTTPConfig.Host, a.cfg.HTTPConfig.Port)
 	listener, err := net.Listen("tcp", host)
 	if err != nil {
 		log.Fatal("failed to create listener")
 	}
 
-	// TODO: find timeouts
 	a.httpServer = &http.Server{
-		Handler: a.router,
-		//WriteTimeout: 10 * time.Second,
-		//ReadTimeout:  10 * time.Second,
+		Handler:      a.router,
+		WriteTimeout: time.Duration(a.cfg.HTTPConfig.SendTimeout) * time.Second,
+		ReadTimeout:  time.Duration(a.cfg.HTTPConfig.ReadTimeout) * time.Second,
 	}
 
 	go func() {
